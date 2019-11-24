@@ -2,6 +2,7 @@ import Vue from 'vue';
 import Router from 'vue-router';
 import Books from './components/Books.vue';
 import Ping from './components/Ping.vue';
+import SigVerify from './components/SigVerify.vue';
 
 Vue.use(Router);
 
@@ -18,6 +19,11 @@ export default new Router({
       path: '/ping',
       name: 'Ping',
       component: Ping,
+    },
+    {
+      path: '/sigverify',
+      name: 'Signature Verify',
+      component: SigVerify,
     },
   ],
 });
