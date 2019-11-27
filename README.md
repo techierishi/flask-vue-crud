@@ -1,8 +1,8 @@
-# Developing a Signature verifier application with Tensorflow, OpenCV, Flask and Vue.js
+## Developing a Signature verifier application with Tensorflow, OpenCV, Flask and Vue.js
 
 ### Want to learn how to build this?
 
-## Want to use this project?
+#### Want to use this project?
 
 1. Fork/Clone
 
@@ -27,4 +27,7 @@
     ```
 
     Navigate to [http://localhost:8080](http://localhost:8080)
+    
+### Screenshot
 
+![Screenshot](screenshot.png)
