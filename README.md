@@ -20,7 +20,7 @@
     ```sh
     $ cd server
     $ python -m venv env
-    $ env/Scripts/activate.bat
+    $ env\Scripts\activate.bat
     (env)$ pip install -r requirements.txt
     (env)$ python app.py
     ```
