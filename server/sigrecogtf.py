@@ -4,12 +4,11 @@ import tensorflow as tf
 import preprocessor
 
 
-def main():
+def main(author):
     print('OpenCV version {} '.format(cv2.__version__))
 
     current_dir = os.path.dirname(__file__)
 
-    author = '021'
     training_folder = os.path.join(current_dir, 'data/training/', author)
     test_folder = os.path.join(current_dir, 'data/test/', author)
 
@@ -31,7 +30,7 @@ def main():
             test_data.append(data)
             test_labels.append([0, 1] if "genuine" in filename else [1, 0])
 
-    sgd(training_data, training_labels, test_data, test_labels)
+    return sgd(training_data, training_labels, test_data, test_labels)
 
 
 # Softmax Regression Model
@@ -59,7 +58,9 @@ def sgd(training_data, training_labels, test_data, test_labels):
     with tf.compat.v1.Session() as sess:
         sess.run(tf.compat.v1.global_variables_initializer())
         sess.run(train_step, feed_dict={x: training_data, y_: training_labels})
-        print(sess.run(accuracy, feed_dict={x: test_data, y_: test_labels}))
+        testresult = sess.run(accuracy, feed_dict={x: test_data, y_: test_labels})
+        print('testresult',testresult)
+        return testresult
 
 if __name__ == '__main__':
-    main()
+    main('029')

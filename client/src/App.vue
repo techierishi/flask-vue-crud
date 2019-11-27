@@ -9,13 +9,14 @@
   </div>
 </template>
 <script>
-import Footer from "./components/Footer";
-import Header from "./components/Header";
+import Footer from './components/Footer.vue';
+import Header from './components/Header.vue';
+
 export default {
   components: {
     Footer,
-    Header
-  }
+    Header,
+  },
 };
 </script>
 <style>

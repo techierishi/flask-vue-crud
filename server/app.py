@@ -1,35 +1,18 @@
+import sigrecogtf
 import uuid
 from flask import Flask, request, redirect, jsonify
 from flask_cors import CORS
 import os
+import shutil
 import urllib.request
 from werkzeug.utils import secure_filename
-
-
+import json
+from tinydb import TinyDB, Query
+db = TinyDB('./db.json')
+table = db.table('sigtable')
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
-UPLOAD_FOLDER = './data/uploads'
-
-
-BOOKS = [
-    {
-        'id': uuid.uuid4().hex,
-        'title': 'On the Road',
-        'author': 'Jack Kerouac',
-        'read': True
-    },
-    {
-        'id': uuid.uuid4().hex,
-        'title': 'Harry Potter and the Philosopher\'s Stone',
-        'author': 'J. K. Rowling',
-        'read': False
-    },
-    {
-        'id': uuid.uuid4().hex,
-        'title': 'Green Eggs and Ham',
-        'author': 'Dr. Seuss',
-        'read': True
-    }
-]
+UPLOAD_FOLDER = './uploads/'
+UPLOAD_FOLDER_DATA = './data/'
 
 # configuration
 DEBUG = True
@@ -37,22 +20,29 @@ DEBUG = True
 # instantiate the app
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER_DATA'] = UPLOAD_FOLDER_DATA
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config.from_object(__name__)
 
 # enable CORS
 CORS(app, resources={r'/*': {'origins': '*'}})
 
+
+def delete_all_files(folder):
+    for filename in os.listdir(folder):
+        if(filename):
+            file_path = os.path.join(folder, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+
 def allowed_file(filename):
-	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def remove_book(book_id):
-    for book in BOOKS:
-        if book['id'] == book_id:
-            BOOKS.remove(book)
-            return True
-    return False
-
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # sanity check route
 @app.route('/ping', methods=['GET'])
@@ -60,63 +50,77 @@ def ping_pong():
     return jsonify('pong!')
 
 
-@app.route('/books', methods=['GET', 'POST'])
-def all_books():
-    response_object = {'status': 'success'}
-    if request.method == 'POST':
-        post_data = request.get_json()
-        BOOKS.append({
-            'id': uuid.uuid4().hex,
-            'title': post_data.get('title'),
-            'author': post_data.get('author'),
-            'read': post_data.get('read')
-        })
-        response_object['message'] = 'Book added!'
-    else:
-        response_object['books'] = BOOKS
-    return jsonify(response_object)
-
-
-@app.route('/books/<book_id>', methods=['PUT', 'DELETE'])
-def single_book(book_id):
-    response_object = {'status': 'success'}
-    if request.method == 'PUT':
-        post_data = request.get_json()
-        remove_book(book_id)
-        BOOKS.append({
-            'id': uuid.uuid4().hex,
-            'title': post_data.get('title'),
-            'author': post_data.get('author'),
-            'read': post_data.get('read')
-        })
-        response_object['message'] = 'Book updated!'
-    if request.method == 'DELETE':
-        remove_book(book_id)
-        response_object['message'] = 'Book removed!'
-    return jsonify(response_object)
-
 @app.route('/file-upload', methods=['POST'])
 def upload_file():
-	# check if the post request has the file part
-	if 'file' not in request.files:
-		resp = jsonify({'message' : 'No file part in the request'})
-		resp.status_code = 400
-		return resp
-	file = request.files['file']
-	if file.filename == '':
-		resp = jsonify({'message' : 'No file selected for uploading'})
-		resp.status_code = 400
-		return resp
-	if file and allowed_file(file.filename):
-		filename = secure_filename(file.filename)
-		file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-		resp = jsonify({'message' : 'File successfully uploaded'})
-		resp.status_code = 201
-		return resp
-	else:
-		resp = jsonify({'message' : 'Allowed file types are txt, pdf, png, jpg, jpeg, gif'})
-		resp.status_code = 400
-		return resp
+    # check if the post request has the file part
+    if 'file' not in request.files:
+        resp = jsonify({'message': 'No file part in the request'})
+        resp.status_code = 400
+        return resp
+    file = request.files['file']
+    if file.filename == '':
+        resp = jsonify({'message': 'No file selected for uploading'})
+        resp.status_code = 400
+        return resp
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        resp = jsonify({'message': 'File successfully uploaded'})
+        resp.status_code = 201
+        return resp
+    else:
+        resp = jsonify(
+            {'message': 'Allowed file types are txt, pdf, png, jpg, jpeg, gif'})
+        resp.status_code = 400
+        return resp
+
+
+@app.route("/file-upload-multi", methods=["POST"])
+def upload():
+    uploaded_files = request.files.getlist("items[]")
+    # print('uploaded_files', uploaded_files)
+    postMeta = json.loads(request.form.get('postMeta'))
+    print('postMeta', postMeta)
+
+    table.purge()
+    table.insert({'folder_name': postMeta.get('folder_name')})
+
+    newpath = app.config['UPLOAD_FOLDER_DATA'] + \
+        postMeta.get('upload_type')+'/'+postMeta.get('folder_name')
+
+    if not os.path.exists(newpath):
+        os.makedirs(newpath)
+
+    # Delete all previous files (if any)
+    delete_all_files(newpath)
+
+    validation_status = False
+    for file in uploaded_files:
+        if file and allowed_file(file.filename):
+            validation_status = True
+        else:
+            validation_status = False
+            break
+    print('validation_status', validation_status)
+    if validation_status:
+        for file in uploaded_files:
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(newpath, filename))
+        resp = jsonify('File successfully uploaded')
+        resp.status_code = 201
+        return resp
+    else:
+        resp = jsonify(
+            {'message': 'Allowed file types are txt, pdf, png, jpg, jpeg, gif'})
+        resp.status_code = 400
+        return resp
+
+# sanity check route
+@app.route('/traintest', methods=['GET'])
+def traintest():
+    print('table_data', table.all())
+    result_data = sigrecogtf.main(table.all()[0].get('folder_name'))
+    return jsonify({'result': str(result_data)})
 
 
 if __name__ == '__main__':
