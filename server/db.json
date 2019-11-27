@@ -1,1 +1,1 @@
-{"_default": {}, "sigtable": {"1": {"folder_name": "1234"}}}
+{"sigtable": {"1": {"rowName": "1234", "training_img": "bigBlue.png", "test_img": "bigBlue.png"}}, "_default": {}, "sigtablemulti": {}}

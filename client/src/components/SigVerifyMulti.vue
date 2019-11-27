@@ -24,7 +24,7 @@
           <h4 class="my-0 font-weight-normal">Training Signature</h4>
         </div>
         <div class="card-body">
-          <FileUpload v-bind:post-meta-data="trainingProps" />
+          <FileUploadMulti v-bind:post-meta-data="trainingProps" />
         </div>
       </div>
       <div class="card mb-4 shadow-sm">
@@ -32,7 +32,7 @@
           <h4 class="my-0 font-weight-normal">Test Signatures</h4>
         </div>
         <div class="card-body">
-          <FileUpload v-bind:post-meta-data="testProps" />
+          <FileUploadMulti v-bind:post-meta-data="testProps" />
         </div>
       </div>
       <div class="card mb-4 shadow-sm">
@@ -61,11 +61,11 @@
 
 <script>
 import axios from 'axios';
-import FileUpload from './FileUpload.vue';
+import FileUploadMulti from './FileUploadMulti.vue';
 
 export default {
   components: {
-    FileUpload,
+    FileUploadMulti,
   },
   name: 'Ping',
   data() {
@@ -80,16 +80,16 @@ export default {
   },
   methods: {
     trainTest() {
-      const path = 'http://localhost:5000/istwoimageequal';
+      const path = 'http://localhost:5000/traintest';
       this.loading = true;
       axios
         .get(path)
         .then((res) => {
           this.loading = false;
           // eslint-disable-next-line
-          console.log('istwoimageequal:res', res);
+          console.log('trainTest:res', res);
           let resultText = '';
-          if (res.data && res.data.result == 'True') {
+          if (res.data && res.data.result > 0.5) {
             this.testStatus = true;
             resultText = 'POSITIVE';
           } else {

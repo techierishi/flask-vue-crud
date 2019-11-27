@@ -1,4 +1,5 @@
 import sigrecogtf
+import checktwoimg
 import uuid
 from flask import Flask, request, redirect, jsonify
 from flask_cors import CORS
@@ -9,7 +10,8 @@ from werkzeug.utils import secure_filename
 import json
 from tinydb import TinyDB, Query
 db = TinyDB('./db.json')
-table = db.table('sigtable')
+sigtablemulti = db.table('sigtablemulti')
+sigtable = db.table('sigtable')
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 UPLOAD_FOLDER = './uploads/'
 UPLOAD_FOLDER_DATA = './data/'
@@ -63,7 +65,27 @@ def upload_file():
         resp.status_code = 400
         return resp
     if file and allowed_file(file.filename):
+        postMeta = json.loads(request.form.get('postMeta'))
         filename = secure_filename(file.filename)
+        sigtableContent = {'rowName':postMeta.get('folder_name')}
+        SigTableQry = Query()
+        if sigtable.contains(SigTableQry.rowName == postMeta.get('folder_name')):
+            if postMeta.get('upload_type') == 'training':
+                sigtableContent['training_img'] = filename
+            elif postMeta.get('upload_type') == 'test':
+                sigtableContent['test_img'] = filename
+            print('db.search()',db.search(SigTableQry.rowName == postMeta.get('folder_name')))
+            sigtable.update(sigtableContent)
+        else:
+            delete_all_files(app.config['UPLOAD_FOLDER'])
+            sigtable.purge()
+
+            if postMeta.get('upload_type') == 'training':
+                sigtableContent['training_img'] = filename
+            elif postMeta.get('upload_type') == 'test':
+                sigtableContent['test_img'] = filename
+            sigtable.insert(sigtableContent)
+
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
         resp = jsonify({'message': 'File successfully uploaded'})
         resp.status_code = 201
@@ -82,8 +104,8 @@ def upload():
     postMeta = json.loads(request.form.get('postMeta'))
     print('postMeta', postMeta)
 
-    table.purge()
-    table.insert({'folder_name': postMeta.get('folder_name')})
+    sigtablemulti.purge()
+    sigtablemulti.insert({'folder_name': postMeta.get('folder_name')})
 
     newpath = app.config['UPLOAD_FOLDER_DATA'] + \
         postMeta.get('upload_type')+'/'+postMeta.get('folder_name')
@@ -115,13 +137,19 @@ def upload():
         resp.status_code = 400
         return resp
 
-# sanity check route
 @app.route('/traintest', methods=['GET'])
 def traintest():
-    print('table_data', table.all())
-    result_data = sigrecogtf.main(table.all()[0].get('folder_name'))
+    print('sigtablemulti_data', sigtablemulti.all())
+    result_data = sigrecogtf.main(sigtablemulti.all()[0].get('folder_name'))
     return jsonify({'result': str(result_data)})
 
+@app.route('/istwoimageequal', methods=['GET'])
+def istwoimageequal():
+    print('sigtable_data', sigtable.all())
+    training_img_path = app.config['UPLOAD_FOLDER']+sigtable.all()[0].get('training_img')
+    test_img_path = app.config['UPLOAD_FOLDER']+sigtable.all()[0].get('test_img')
+    result_data = checktwoimg.isTwoImageEqual(training_img_path,test_img_path)
+    return jsonify({'result': str(result_data)})
 
 if __name__ == '__main__':
     app.run()
