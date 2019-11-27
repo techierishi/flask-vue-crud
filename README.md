@@ -11,17 +11,17 @@
     *Linux*
     ```sh
     $ cd server
-    $ python3.7 -m venv env
+    $ python3.7 -m venv env #[1st Time Only]
     $ source env/bin/activate
-    (env)$ pip install -r requirements.txt
+    (env)$ pip install -r requirements.txt #[1st Time Only]
     (env)$ python app.py
     ```
      *Windows*
     ```sh
     $ cd server
-    $ python -m venv env
+    $ python -m venv env #[1st Time Only]
     $ env\Scripts\activate.bat
-    (env)$ pip install -r requirements.txt
+    (env)$ pip install -r requirements.txt #[1st Time Only]
     (env)$ python app.py
     ```
 
@@ -31,7 +31,7 @@
 
     ```sh
     $ cd client
-    $ npm install
+    $ npm install #[1st Time Only]
     $ npm run serve
     ```
 
