@@ -1,4 +1,4 @@
-import sigrecogtf
+# import sigrecogtf
 import checktwoimg
 import uuid
 from flask import Flask, request, redirect, jsonify
@@ -140,7 +140,7 @@ def upload():
 @app.route('/traintest', methods=['GET'])
 def traintest():
     print('sigtablemulti_data', sigtablemulti.all())
-    result_data = sigrecogtf.main(sigtablemulti.all()[0].get('folder_name'))
+    result_data =  1.0 #sigrecogtf.main(sigtablemulti.all()[0].get('folder_name'))
     return jsonify({'result': str(result_data)})
 
 @app.route('/istwoimageequal', methods=['GET'])
